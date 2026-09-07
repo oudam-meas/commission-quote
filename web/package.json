@@ -1,0 +1,36 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The UI and the API layer in one deployable. src/client is React, src/server holds the vendor api-key.",
+  "scripts": {
+    "start:server": "tsx --env-file-if-exists=.env src/server/index.ts",
+    "dev:server": "tsx dev/main.ts",
+    "start:client": "vite",
+    "test": "vitest run tests/unit tests/integration",
+    "test:unit": "vitest run tests/unit",
+    "test:int": "vitest run tests/integration",
+    "typecheck": "tsc -p tsconfig.server.json && tsc -p tsconfig.client.json"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.1",
+    "@picocss/pico": "^2.1.1",
+    "hono": "^4.13.7",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^26.4.1",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "jsdom": "^29.1.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vite": "^7.2.0",
+    "vitest": "^3.2.7"
+  }
+}

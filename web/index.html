@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Commission Quote App</title>
+    <style>
+      /* One small column, centered both ways. The grid is on body because
+         #root sits between body and main. */
+      body {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+      }
+      #root {
+        width: 100%;
+      }
+      main {
+        max-width: 30rem;
+        margin-inline: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/client/main.tsx"></script>
+  </body>
+</html>

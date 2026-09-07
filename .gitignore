@@ -8,3 +8,4 @@ dist-server/
 *.log
 
 .claude/
+.DS_Store
