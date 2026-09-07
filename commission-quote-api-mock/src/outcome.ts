@@ -1,23 +1,37 @@
-export type Outcome = 'success' | 'error' | 'timeout';
+export type Outcome = 'success' | 'error' | 'badGateway' | 'timeout' | 'slow' | 'malformed';
 
 // The random number arrives as a parameter, so a test can pin any outcome
 // without an env var and without waiting for chance. The pick itself stays
 // uncontrollable at runtime.
 export function pickOutcome(randomNumber: number, failureRate: number): Outcome {
-  const errorBandStart = 1 - failureRate;
+  const successBandStart = 1 - failureRate;
 
-  // The failure share splits evenly between error and timeout, so the timeout
-  // band is the last half of it. Measuring back from 1 keeps the default rate
-  // landing on exactly 0.9, which adding two fractions would not.
-  const timeoutBandStart = 1 - failureRate / 2;
+  // The failure share splits evenly across the five failure kinds.
+  const failureBandWidth = failureRate / 5;
+  const badGatewayBandStart = successBandStart + failureBandWidth;
+  const timeoutBandStart = badGatewayBandStart + failureBandWidth;
+  const slowBandStart = timeoutBandStart + failureBandWidth;
+  const malformedBandStart = slowBandStart + failureBandWidth;
 
-  if (randomNumber < errorBandStart) {
+  if (randomNumber < successBandStart) {
     return 'success';
   }
 
-  if (randomNumber < timeoutBandStart) {
+  if (randomNumber < badGatewayBandStart) {
     return 'error';
   }
 
-  return 'timeout';
+  if (randomNumber < timeoutBandStart) {
+    return 'badGateway';
+  }
+
+  if (randomNumber < slowBandStart) {
+    return 'timeout';
+  }
+
+  if (randomNumber < malformedBandStart) {
+    return 'slow';
+  }
+
+  return 'malformed';
 }

@@ -8,7 +8,7 @@ const validRequest = { loanAmount: 250000, loanTermInMonths: 240, riskBand: 'LOW
 // Pricing and validation are what this file checks, so the picked outcome is
 // pinned to success by a hand-written double. The ready-built app picks at
 // random, and a suite that depends on chance is not a suite.
-const app = createApp({ pickOutcome: () => 'success' });
+const app = createApp({ pickOutcome: () => 'success', sleep: async () => {} });
 
 type QuoteResponseBody = {
   quoteId?: string;

@@ -15,13 +15,15 @@ describe('reading the server config', () => {
 // SPEC-004/B7
 describe('reading the failure rate from the config', () => {
   it('falls back to the default rate when the variable is absent', () => {
-    expect(readConfig({ API_KEY: 'local-dev-key' }).failureRate).toBe(0.2);
+    expect(readConfig({ API_KEY: 'local-dev-key' }).failureRate).toBe(0);
   });
 
-  // Number('') is 0 in JavaScript, so an implementation that converts before it
-  // checks for an empty value would switch failures off without saying so.
+  // Number('') is also 0, so this and the absent case would pass even if the
+  // empty check were missing entirely. It stays as its own case because the
+  // reasoning — an explicit absent check, not a numeric coincidence — is what
+  // this test is proving, not just the resulting number.
   it('falls back to the default rate when the variable is empty', () => {
-    expect(readConfig({ API_KEY: 'local-dev-key', FAILURE_RATE: '' }).failureRate).toBe(0.2);
+    expect(readConfig({ API_KEY: 'local-dev-key', FAILURE_RATE: '' }).failureRate).toBe(0);
   });
 
   // Not a number rather than out of range: Number('often') is NaN, and every

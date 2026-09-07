@@ -1,6 +1,10 @@
+export type RiskBand = 'LOW' | 'MEDIUM' | 'HIGH';
+
 // The rates are invented for this stand-in. They only have to be plausible
-// and fixed, so they are written here and nowhere else.
-export function rateForRiskBand(riskBand: string): number | undefined {
+// and fixed, so they are written here and nowhere else. The caller's schema
+// already rejects anything outside these three bands, so there is no other
+// case to return for.
+export function rateForRiskBand(riskBand: RiskBand): number {
   if (riskBand === 'LOW') {
     return 0.015;
   }
@@ -9,12 +13,7 @@ export function rateForRiskBand(riskBand: string): number | undefined {
     return 0.0125;
   }
 
-  if (riskBand === 'HIGH') {
-    return 0.01;
-  }
-
-  // A band with no rate is what gives the route its 400 branch.
-  return undefined;
+  return 0.01;
 }
 
 // Math.round because the rate produces a fraction of a cent, and a cent is the

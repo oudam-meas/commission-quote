@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { errorBody, healthBody, quoteBody } from './schemas.js';
 
-// This suite is a blackbox. It imports nothing from the mock it tests, and it
-// talks over a real port, so the same file can be pointed at the real vendor.
-// zod is a schema library on the test side, so importing it keeps that
-// property.
+// This suite is a blackbox. It imports nothing from the mock's own app
+// logic — only the shared contract schemas, which state the agreement
+// rather than the stand-in's implementation of it — and it talks over a
+// real port, so the same file can be pointed at the real vendor.
 const vendorUrl = process.env.VENDOR_URL ?? 'http://localhost:4000';
 const vendorApiKey = process.env.VENDOR_API_KEY ?? 'local-dev-key';
 
@@ -15,31 +16,6 @@ const quoteRequest = {
   loanTermInMonths: 240,
   riskBand: 'LOW',
 };
-
-// Every schema below states shape and constraint and never a value, because a
-// correct vendor implementation nobody here has seen has to pass this file
-// unedited. z.object ignores keys it does not name, so a vendor that returns
-// more fields than we agreed stays green.
-
-const healthBody = z.object({
-  status: z.string().min(1),
-});
-
-// One envelope for every error the contract covers, per ADR-001.
-const errorBody = z.object({
-  error: z.object({
-    code: z.string().min(1),
-    message: z.string().min(1),
-  }),
-});
-
-// A rate is a fraction, so it sits between 0 and 1. Money is whole cents, so
-// totalCommission is an integer and cannot be owed backwards.
-const quoteBody = z.object({
-  quoteId: z.string().min(1),
-  commissionRate: z.number().gt(0).lt(1),
-  totalCommission: z.number().int().nonnegative(),
-});
 
 type ContractRow = {
   name: string;
@@ -54,9 +30,6 @@ type ContractRow = {
     body: z.ZodType;
     contentType?: string;
   };
-  // How many times the row may ask before it gives up. A row that leaves this
-  // out sends one request, which is what every row did before SPEC-004.
-  maxAttempts?: number;
 };
 
 // SPEC-001/B3: the rows are walked by a real fetch against VENDOR_URL, in a
@@ -107,10 +80,10 @@ const contract: ContractRow[] = [
     },
     expect: { status: 401, body: errorBody },
   },
-  // The vendor fails a share of its quote requests on purpose, so this row asks
-  // again until it is answered. Five attempts miss about once in three thousand
-  // runs. The 401 rows need none of this: SPEC-004/B5 puts the api-key check
-  // before the pick, so they are already settled.
+  // This suite needs the vendor's random failure turned off — run it against
+  // a server started with FAILURE_RATE=0, or this row fails one time in
+  // five. SPEC-004's failure paths are covered by unit tests with a
+  // hand-written double instead; a contract test cannot force one deliberately.
   // SPEC-002/B3
   {
     name: 'returns the quote fields for a request carrying the configured api-key',
@@ -121,7 +94,6 @@ const contract: ContractRow[] = [
       body: quoteRequest,
     },
     expect: { status: 200, body: quoteBody },
-    maxAttempts: 5,
   },
 ];
 
@@ -136,14 +108,7 @@ function sendRequest(entry: ContractRow) {
 describe('Commission Quote API contract', () => {
   for (const entry of contract) {
     it(entry.name, async () => {
-      const maxAttempts = entry.maxAttempts ?? 1;
-      let response = await sendRequest(entry);
-      let attempts = 1;
-
-      while (response.status !== entry.expect.status && attempts < maxAttempts) {
-        response = await sendRequest(entry);
-        attempts += 1;
-      }
+      const response = await sendRequest(entry);
 
       expect(response.status).toBe(entry.expect.status);
 
