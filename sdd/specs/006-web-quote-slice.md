@@ -1,7 +1,7 @@
 ---
 id: SPEC-006
 title: Web — the quote slice, happy path
-status: ready
+status: done
 primary_test_level: integration
 touches: [web/src/, web/tests/]
 ---
@@ -27,8 +27,10 @@ only.
 - B8: No file under `src/client/` contains `VENDOR_URL` or the api-key.
 - B9: The submit control is disabled unless the loan amount and the
   loan term are both valid, non-zero numbers.
-- B10: Both inputs carry `min` and `step="1"`, so the browser refuses
-  to submit a negative value or one with decimal places.
+- B10: Both inputs carry `min`, `max` and `step="1"`, so the browser
+  refuses to submit a negative value, one with decimal places, or one
+  above the server's cap — `10000000` dollars for the amount, `480`
+  months for the term.
 
 ## Contract
 
@@ -79,8 +81,8 @@ Pure. State and handlers arrive as props. `useQuote` holds the state.
 | B7 | unit | cents to dollars, both edges |
 | B8 | human | `grep -r VENDOR_URL web/src/client/` returns nothing |
 | B9 | unit | set the loan amount (or the term) to `0`, a negative value, or empty; assert submit stays disabled. Set both to valid positive values; assert it's enabled |
-| B10 | unit | render the form, assert `min`/`step` on each input |
-| B10's submit block | human | type a negative or decimal amount, click submit, confirm nothing reaches the network tab |
+| B10 | unit | render the form, assert `min`/`max`/`step` on each input |
+| B10's submit block | human | type a negative, decimal or over-max amount, click submit, confirm nothing reaches the network tab |
 
 Doubles are hand-written.
 

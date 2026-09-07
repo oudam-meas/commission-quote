@@ -52,20 +52,22 @@ describe('the quote form', () => {
   });
 
   // SPEC-006/B10
-  it('gives the loan amount input a min of 1 and a step of 1', () => {
+  it('bounds the loan amount input to whole dollars from 1 to 10000000', () => {
     const { getByLabelText } = render(<QuoteForm onSubmit={() => {}} />);
     const input = getByLabelText(/loan amount/i) as HTMLInputElement;
 
     expect(input.min).toBe('1');
+    expect(input.max).toBe('10000000');
     expect(input.step).toBe('1');
   });
 
   // SPEC-006/B10
-  it('gives the loan term input a min of 1 and a step of 1', () => {
+  it('bounds the loan term input to whole months from 1 to 480', () => {
     const { getByLabelText } = render(<QuoteForm onSubmit={() => {}} />);
     const input = getByLabelText(/loan term/i) as HTMLInputElement;
 
     expect(input.min).toBe('1');
+    expect(input.max).toBe('480');
     expect(input.step).toBe('1');
   });
 });

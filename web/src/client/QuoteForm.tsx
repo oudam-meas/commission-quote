@@ -4,6 +4,10 @@ import type { QuoteFormProps } from './types';
 
 const riskBands = ['LOW', 'MEDIUM', 'HIGH'];
 
+// The server's caps from contracts.ts, in the units this form speaks.
+const maxLoanAmountInDollars = 10_000_000;
+const maxLoanTermInMonths = 480;
+
 export function QuoteForm({ onSubmit, disabled = false }: QuoteFormProps) {
   const [loanAmountInDollars, setLoanAmountInDollars] = useState('');
   const [loanTermInMonths, setLoanTermInMonths] = useState('');
@@ -32,6 +36,7 @@ export function QuoteForm({ onSubmit, disabled = false }: QuoteFormProps) {
           id="loanAmount"
           type="number"
           min="1"
+          max={maxLoanAmountInDollars}
           step="1"
           value={loanAmountInDollars}
           onChange={(event) => setLoanAmountInDollars(event.target.value)}
@@ -44,6 +49,7 @@ export function QuoteForm({ onSubmit, disabled = false }: QuoteFormProps) {
           id="loanTermInMonths"
           type="number"
           min="1"
+          max={maxLoanTermInMonths}
           step="1"
           value={loanTermInMonths}
           onChange={(event) => setLoanTermInMonths(event.target.value)}
