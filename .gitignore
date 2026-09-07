@@ -1,0 +1,10 @@
+TEMP/
+
+node_modules/
+dist/
+dist-server/
+.env
+.env.local
+*.log
+
+.claude/
