@@ -6,6 +6,19 @@ UI and the API that holds the vendor key live in one deployable
 ([`commission-quote-api-mock/`](commission-quote-api-mock/)) standing in
 for a real Commission Quote API that isn't built yet.
 
+```
+commission-quote-app/
+├── commission-quote-api-mock/   # vendor stand-in, own process and port
+│   └── src/                     # auth, pricing, random failure simulation
+├── web/
+│   └── src/
+│       ├── client/               # React: form and quote display
+│       └── server/               # Hono: holds the vendor api-key
+└── sdd/
+    ├── specs/                    # behaviour specs, written before the code
+    └── ADRs/                     # the decisions behind them
+```
+
 ## AI usage
 
 I write the spec and the ADR before the code. Fixing the decision first
@@ -33,7 +46,12 @@ cp web/.env.example web/.env
 npm start
 ```
 
-Then open `http://localhost:5173`(http://localhost:5173).
+Then open [http://localhost:5173](http://localhost:5173).
+
+The vendor mock fails on purpose — the brief asks for an API that
+occasionally throws an error at random. By default roughly one quote
+request in five fails, so an error from a submit is the mock working,
+not a bug. See [Seeing the failure paths](#seeing-the-failure-paths).
 
 | Process | Port |
 |---|---|
@@ -48,12 +66,13 @@ npm test          # unit and integration, both packages
 npm run typecheck # both packages
 ```
 
-Contract tests make a real HTTP call, so they need the mock running and
-are a separate command:
+Contract tests make a real HTTP call, so they need the mock running —
+with its random failure off, since the suite cannot tell a simulated
+failure from a broken contract:
 
 ```shell
-npm start --prefix commission-quote-api-mock       # one terminal
-npm run test:contract --prefix commission-quote-api-mock   # another
+FAILURE_RATE=0 npm start --prefix commission-quote-api-mock  # one terminal
+npm run test:contract --prefix commission-quote-api-mock     # another
 ```
 
 ## How it fits together
@@ -122,8 +141,8 @@ Enforced:
   [`web/src/client/`](web/src/client/) references it.
 - No raw vendor error body reaches the browser — logged, never
   forwarded. [`web/src/server/services/quote-service.ts`](web/src/server/services/quote-service.ts).
-- Every route rejects a body over 10,000 bytes before anything else
-  runs. [`web/src/server/middleware/body-limit.ts`](web/src/server/middleware/body-limit.ts).
+- Every route rejects a body over 10,000 bytes before any handler
+  sees it. [`web/src/server/middleware/body-limit.ts`](web/src/server/middleware/body-limit.ts).
 - A request id rides on every response, so a failure can be traced
   without logging anything sensitive alongside it. The `api-key` is
   never logged.
@@ -141,8 +160,10 @@ Three levels, matching the convention in [`CLAUDE.md`](CLAUDE.md):
 - **Unit** — one module, no network. Does this piece of logic behave
   correctly on its own.
 - **Integration** — an endpoint as a black box, vendor client swapped
-  for a hand-written double, one per error category. Does `api` sort a
-  given vendor outcome into the response ADR-004 says it should.
+  for a hand-written double, one per error category by default —
+  SPEC-008 narrows two of them (timeout, invalid response) to
+  unit-only, deliberately. Does `api` sort a given vendor outcome into
+  the response ADR-004 says it should.
 - **Contract** — a real HTTP call against a running mock. Does the
   actual wire format match what the rest of the suite assumes.
 
@@ -153,8 +174,9 @@ mapping downstream is correct.
 
 ## Seeing the failure paths
 
-The mock never fails on its own (`FAILURE_RATE=0`). Turn it up and
-restart to watch a failure by hand:
+The mock fails roughly one request in five by default
+(`FAILURE_RATE=0.2`). Turn it up to see every path sooner, or set `0`
+to switch the simulation off:
 
 ```shell
 FAILURE_RATE=0.8 npm start
@@ -166,9 +188,11 @@ for what each outcome means.
 
 ## What I would do next
 
-- Retry or backoff on a transient vendor failure instead of surfacing
-  it immediately
-- Auth and rate limiting on `web` itself
-- A production build and CI
-- Structured logging instead of `console.log`/`console.warn`
+- Security hardening for a production deployment — `web` has no auth
+  of its own today
+- A deployment and runtime strategy — containers, health probes, CI
+- Observability — structured logs, request tracing into the vendor,
+  metrics
+- Cross-cutting concerns like retry/backoff, shared where a second
+  route would need them too
 - End-to-end tests through a real browser

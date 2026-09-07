@@ -22,7 +22,12 @@ export function QuoteDisplay({ quote }: QuoteDisplayProps) {
       <dd>{(quote.commissionRate * 100).toFixed(2)}%</dd>
 
       <dt>Total commission</dt>
-      <dd>${centsToDollars(quote.totalCommission).toFixed(2)}</dd>
+      <dd>
+        {centsToDollars(quote.totalCommission).toLocaleString('en-US', {
+          style: 'currency',
+          currency: 'USD',
+        })}
+      </dd>
     </dl>
   );
 }
