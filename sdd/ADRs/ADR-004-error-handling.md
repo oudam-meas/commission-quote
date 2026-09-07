@@ -90,16 +90,23 @@ and the success body stays just the three vendor fields.
 
 ## Logging
 
-Log at the boundary only: the incoming request, the outgoing vendor call,
-and the outcome. A request id generated at the edge goes on the log line
-and comes back in the response, so a failed quote can be traced from what
-the user saw to what the vendor did. Never log the api-key or a full
-vendor response body.
+Boundary-only logging is the default, not a rule with no exceptions.
+`hono/logger` already logs every incoming request and its outcome, and
+`x-request-id` rides on the response, so a known failure — one of the
+categories above — doesn't need its own log line to be traceable.
+
+An unexpected failure is different: a vendor answering something other
+than `200`, a `200` whose body breaks the contract, or a bug this app
+didn't plan for. Those get logged with full context, vendor body
+included, because the vendor is a system this app doesn't own and a
+status code alone isn't enough to debug it against. Never log the
+api-key.
 
 ## Consequences
 
-- Integration tests: one per category, with the vendor client swapped for
-  a double.
+- Integration tests: one per category by default, with the vendor
+  client swapped for a double. SPEC-008 narrows two categories
+  (timeout, invalid response) to unit-only, deliberately.
 - The vendor client's own deadline is tested separately, at the unit
   level, because an integration double replaces the whole client and a
   deadline inside it would never fire against one.

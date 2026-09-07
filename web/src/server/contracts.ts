@@ -3,8 +3,13 @@ import { z } from 'zod';
 // One file read in both directions, so the contract is written once. The
 // bounds are ours: the brief fixes none.
 export const loanDetailsSchema = z.object({
-  // Integer cents, $1,000 to $10,000,000. Both ends are accepted.
-  loanAmount: z.number().int().min(100_000).max(1_000_000_000),
+  // Integer cents, $1,000 to $10,000,000. Both ends are accepted. The bound
+  // messages speak dollars because the form does; the API itself is cents.
+  loanAmount: z
+    .number()
+    .int()
+    .min(100_000, 'Loan amount must be at least $1,000')
+    .max(1_000_000_000, 'Loan amount must be at most $10,000,000'),
   loanTermInMonths: z.number().int().min(1).max(480),
   riskBand: z.enum(['LOW', 'MEDIUM', 'HIGH']),
 });

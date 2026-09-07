@@ -20,12 +20,12 @@ describe('validateLoanDetails', () => {
   });
 
   // SPEC-008/B5
-  it('rejects an invalid body with the schema\'s own message', () => {
+  it('rejects an invalid body with the schema\'s message', () => {
     const result = validateLoanDetails({ ...validLoanDetails, loanAmount: 99_999 });
 
     expect(result).toEqual({
       valid: false,
-      message: 'Too small: expected number to be >=100000',
+      message: 'Loan amount must be at least $1,000',
     });
   });
 });

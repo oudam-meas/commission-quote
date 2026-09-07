@@ -13,8 +13,8 @@ export function createApp({ vendorClient }: AppDependencies): Hono<{ Variables: 
   const app = new Hono<{ Variables: AppVariables }>();
 
   app.use('*', logger());
-  app.use('*', bodyLimitMiddleware());
   app.use('*', requestIdMiddleware());
+  app.use('*', bodyLimitMiddleware());
 
   app.get('/health', (context) => {
     return context.json({ status: 'ok' });

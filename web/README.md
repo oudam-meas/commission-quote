@@ -51,8 +51,9 @@ response:
 Every response follows one shape, `ErrorResponse` in
 `src/server/errors/error-response.ts`: `{ code: string; message: string }`,
 wrapped as `{ error: ErrorResponse }`. The vendor's own error body is
-never parsed or forwarded — this repo's invariant is that no raw
-vendor error reaches the user.
+read and logged for debugging, never parsed to decide the response and
+never forwarded — this repo's invariant is that no raw vendor error
+reaches the user.
 
 What the vendor mock itself can answer is documented in
 [its README](../commission-quote-api-mock/README.md#it-fails-on-purpose).
@@ -70,7 +71,9 @@ NodeNext resolution, `src/client/` with DOM and bundler resolution. A
 React import inside `src/server/` fails.
 
 Integration tests treat the server's endpoints as a black box, with the
-vendor client swapped for a hand-written double, one per error category.
+vendor client swapped for a hand-written double, one per error category
+by default — SPEC-008 narrows two of them (timeout, invalid response)
+to unit-only, deliberately.
 
 ## What works today
 

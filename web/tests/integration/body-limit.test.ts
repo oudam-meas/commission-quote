@@ -26,6 +26,7 @@ function createRecordingVendorClient(): VendorClient & { calls: LoanDetails[] } 
 }
 
 describe('the body limit, mounted on every route', () => {
+  // SPEC-008/B8
   it('rejects an oversized body with 413, without calling the vendor', async () => {
     const vendorClient = createRecordingVendorClient();
     const oversizedBody = JSON.stringify({ ...loanDetails, riskBand: 'X'.repeat(20_000) });
@@ -40,6 +41,7 @@ describe('the body limit, mounted on every route', () => {
     expect(response.status).toBe(413);
     expect(body.error.code).toBe('PAYLOAD_TOO_LARGE');
     expect(vendorClient.calls).toEqual([]);
+    expect(response.headers.get('x-request-id')).toEqual(expect.stringMatching(/\S/));
   });
 
   it('still accepts a normal-sized body', async () => {

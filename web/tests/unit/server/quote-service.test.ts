@@ -73,6 +73,7 @@ describe('processQuoteRequest, rejecting with an HTTPException built from a vend
     });
   });
 
+  // SPEC-008/B15
   // SPEC-008/B7
   it('rejects a 200 body that breaks the outbound contract as a 500 invalid-response, and logs the field', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

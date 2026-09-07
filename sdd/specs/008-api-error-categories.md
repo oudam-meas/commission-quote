@@ -1,7 +1,7 @@
 ---
 id: SPEC-008
 title: api — validation both directions, error categories and logging
-status: ready
+status: done
 primary_test_level: unit
 touches: [web/src/server/, web/tests/]
 ---
@@ -15,8 +15,10 @@ failure nothing here already accounts for. The screen is a later spec.
 
 ## Behaviours
 
-B9 and B11 are retired — see Rationale. Numbering below keeps every
-surviving ID stable against the test comments that already cite it.
+B9 and B11 are retired: a known failure's status and body already say
+what happened, so neither gets its own log line. Numbering below keeps
+every surviving ID stable against the test comments that already cite
+it.
 
 - B1: A vendor `5xx` answers `502`.
 - B2: A vendor `401` or `403` answers `502`, byte-identical to B1.
@@ -79,8 +81,9 @@ is a simulated vendor failure.`, appended because the vendor is
 ADR-001's stand-in — see Rationale.
 
 `body too large` is not specific to `/api/quote` — `bodyLimitMiddleware()`
-is mounted on every route, ahead of anything else, so no handler ever
-runs against a body over 10,000 bytes. A valid quote request is a few
+is mounted on every route, after only the request id, so no handler
+ever runs against a body over 10,000 bytes and the rejection still
+carries an `x-request-id`. A valid quote request is a few
 dozen bytes; this is headroom against a large request tying up memory,
 not a real ceiling on legitimate use.
 
@@ -101,7 +104,11 @@ included. The `200` body stays `quoteId`, `commissionRate`,
 | `riskBand` | exactly `LOW`, `MEDIUM` or `HIGH` |
 
 The message is zod's own message for the first issue `loanDetailsSchema`
-reports — not hand-authored. Zod checks an object's fields in the order
+reports, with one exception: the two `loanAmount` bound messages are
+hand-authored in dollars — "Loan amount must be at least $1,000" and
+"Loan amount must be at most $10,000,000". The API speaks cents but the
+form is labelled dollars, so zod's cents bound on screen misled the
+person who typed dollars. Zod checks an object's fields in the order
 they are declared, so "first bad field" means `loanAmount`, then
 `loanTermInMonths`, then `riskBand`. A body that is not an object at all
 produces one issue on the whole value, with zod's own wording for that.
@@ -124,7 +131,7 @@ produces one issue on the whole value, with zod's own wording for that.
 | `src/server/middleware/validate-quote-request.ts` | parses the body, runs inbound validation, throws `HTTPException` and never calls `next()` on failure. On success, sets the valid body on context as `requestBody` |
 | `src/server/services/quote-service.ts` | takes an already-valid body, calls the vendor, runs outbound validation. Logs a `VendorStatusError`'s raw body — B14 — or a contract failure's field names — B15 — then throws `HTTPException` on any failure; returns the 200 body on success |
 | `src/server/vendor/client.ts` | the vendor call, and its own deadline. A non-`200` response carries its raw body as `cause`, for the log only |
-| `src/server/middleware/body-limit.ts` | rejects a body over 10,000 bytes on every route, before anything else runs |
+| `src/server/middleware/body-limit.ts` | rejects a body over 10,000 bytes on every route, before any handler sees it |
 | `src/server/app.ts` | reads `requestBody` off context, calls `quote-service.ts`, catches every failure in one `onError` and writes the response |
 
 **What happens on a failure.** Everything that can fail throws
@@ -267,15 +274,18 @@ vendor's doing, simulated or not.
 the catch-all carries both plus any unexpected status.
 
 **A `200` never goes through the vendor-status check.** It goes to the
-contract check instead, and a failure body is never parsed — `api` reads
-the vendor's status code and nothing else.
+contract check instead. A non-`200` body is read and logged for
+debugging — B14 — but never parsed to decide the category: `api` reads
+the vendor's status code for that, and nothing else.
 
 **A `401` gets the same response as a `5xx`** because the user sees the
 same message and has no action either way. A `401` to the browser would
 suggest their own session had expired. The cost: the message invites a
 retry that cannot help the auth case. ADR-004 accepts that. They are the
-same category too, not just the same response — see the "vendor auth
-folded into vendor error" note below.
+same category too, not just the same response: `quote-service.ts` asks
+one question about a vendor status, `status === 504`, and everything
+else — a `5xx`, a `401`/`403`, any other unexpected status — is one
+`vendor-error` category.
 
 **The messages are chosen here.** ADR-004 fixes the status and the code
 and writes no user-facing text.
@@ -293,132 +303,30 @@ shaping the 200 body once `services/validation/` took over running both
 schemas, and the request-rejecting logic moved out of `app.ts` into its
 own middleware file. One job per file.
 
-**Superseded: orchestration moved into the service.** That split still
-left the route calling `errors/categories.ts` and shaping the response
-inline, so proving B1–B4, B6 and B7 needed a live `app.request()` call
-to reach that logic — the middleware and the route together held all
-of it, and neither could be exercised without the other. `quote-service.ts`
-now owns the whole request: inbound validation, the vendor call, outbound
-validation, one outcome value out. The route's job shrank to reading the
-body, calling the service once, mapping its outcome to a status and body,
-and writing the log lines. Six behaviours moved to a plain function call
-against a fake vendor client, no HTTP layer in the way. What is left at
-the route is exactly what an outcome value cannot prove by itself: the
-real header, the real status code on the wire, and the log line's exact
-text — B8 through B11.
-
-**Superseded again: the service throws instead of returning.** Returning
-an outcome value stopped the route from re-deriving a category, but the
-route still matched on `kind` to pick a status and a body — one switch
-in place of several. `quote-service.ts` now threw a custom `HttpError`
-with the status, the `code` and the message already attached — later
-replaced by `HTTPException`, below — so the route's job shrank to one
-catch: read those fields off whatever was thrown, or answer the generic
-`500` when it did not match at all — B12.
-
-**Superseded again: inbound validation moved back out of the service.**
-The service throwing for a bad body worked, but it meant "was this ever
-a real quote request" and "did the vendor answer it correctly" lived in
-the same function. Inbound validation moved to `validate-quote-request.ts`,
-a middleware that parses the body, validates it, and answers `400`
-itself — the service never sees a request that hasn't already passed.
-It sets the valid body on context as `requestBody` rather than
-reparsing it, so the parse happens once. The cost: B5 and B6 can no
-longer be proven against a plain function call, because a Hono
-middleware needs a real `Context` — they moved from unit to integration.
-
-**Superseded again: vendor auth folded into vendor error.**
-`errors/categories.ts` sorted a vendor status into three categories, but
-`vendor-auth` and `vendor-error` always produced the same `502` — the
-only difference was one word in a log line since removed (see below).
-`quote-service.ts` now asks one question directly, `status === 504`,
-and `errors/categories.ts` is gone.
-
-**Superseded again: known failures stopped being logged.** Every known
-failure — vendor error, timeout, an outbound contract break, an invalid
-request — was once logged with its category and detail, on the theory
-that an operator would want the full boundary traced. In practice a
-known failure's category and status are already sitting in the response
-next to `x-request-id`; logging them again duplicated what the response
-already says, for cases where nothing was actually wrong with the app.
-Only a genuinely unexpected thrown value — B12 — has no other record of
-itself anywhere, so only it gets logged, with its trace, as B13. B11 is
-gone outright: there is no outcome log line left for it to name a field
-on.
-
-**Superseded again: inbound validation throws too, and stopped logging
-itself.** `validate-quote-request.ts` used to answer its own `400` and
-log two lines of its own — the one asymmetry left where a failure did
-not go through one shared exception type and `onError` like everything
-else. It now throws the same way `quote-service.ts` does, so `app.ts`
-has exactly one path from a thrown failure to a response, regardless of
-where it was decided. Its own logging is gone for the same reason every
-other known failure stopped being logged: the response already says
-what happened, and `hono/logger` already logs that a request came in
-and what it got back. B9 is retired outright — there is no longer a
-custom "incoming request" line for an id to appear on.
-
-**Superseded again: `HttpError` replaced with Hono's own `HTTPException`.**
-A hand-rolled `Error` subclass held `status`, `code`, `message` and three
-fields nothing ever ended up reading — `category`, `vendorStatus`,
-`fieldNames` — write-only ceremony left over from when failures were
-logged in detail. `HTTPException` (`hono/http-exception`) is the
-framework's own type for exactly this: a deliberate, known HTTP failure.
-It has no `code` field of its own, so `code` and `message` travel
-together as an `ErrorResponse` in its standard `cause` option instead —
-`onError` reads `raised.cause` and spreads it straight into the body.
-One fewer hand-rolled class, one framework type recognisable to anyone
-who has read Hono's own docs, and no more fields carried only to be
-unused.
-
 **The vendor client holds the deadline, not the route.** ADR-003 says
 why: production code should not be shaped around a test double's
 limits, and the double now honours the abort signal instead of
 production code working around it.
 
-**Superseded again: one catch, not two.** The vendor client used to
-catch its own `fetch` call and translate `AbortSignal.timeout()`'s
-`DOMException` into a `VendorTimeoutError` it threw instead — a second,
-separate translation layer alongside `quote-service.ts`'s own catch
-around the vendor call. `vendor/client.ts` no longer catches anything
-of its own; the `DOMException` propagates unchanged, and
-`quote-service.ts` recognises it directly, the same place it already
-recognises `VendorStatusError`. One catch instead of two, at the cost
-of `quote-service.ts` now knowing a `fetch`-level detail —
-`AbortSignal.timeout()` fails this specific way — that `VendorTimeoutError`
-used to hide behind a domain name. `VendorStatusError` is unaffected: a
-non-200 response is still a plain conditional throw in the vendor
-client, never a catch, so there was nothing to consolidate there.
+**A vendor's error body is logged unparsed, never sent to the browser.**
+The status alone says *that* the vendor failed, never *why* —
+discarding the body unread throws away real debugging value.
+`VendorStatusError` carries it as `cause`; `quote-service.ts` logs it
+before building the `HTTPException` the browser sees. The body is read
+as text, never JSON, never validated, and never rides on the
+`HTTPException`'s own `cause` — only `{ code, message }` does. A vendor
+sending something hostile in a `5xx` body reaches a log line an
+operator reads, never a response a browser renders. (Revisited once —
+an earlier version discarded the body unread.)
 
-**Reversed: a vendor error body is now logged, unparsed.** A vendor
-`5xx` used to be a dead end — the status sorted it into a category, and
-whatever the vendor actually said (a stack trace, an error page) was
-discarded unread. That traded away real debugging value: the status
-says *that* the vendor failed, never *why*. `VendorStatusError` now
-carries the raw body as `cause`; `quote-service.ts` logs it before
-building the `HTTPException` the browser sees. This reverses an earlier version of this decision, which once stated
-flatly that the app never parses a vendor error body — which is why it
-is said here explicitly rather than changed quietly. What did not change: the body is read as text, never as JSON,
-never validated, and never rides on the `HTTPException`'s own `cause`
-— only `{ code, message }` does. A vendor sending back something
-hostile in a `5xx` body reaches a log line an operator reads, never a
-response a browser renders.
-
-**Reversed: an outbound contract break is `invalid response`, not
-`vendor error`, and its fields are logged.** A `200` body breaking our
-own contract used to answer `502`/`VENDOR_UNAVAILABLE`, sharing both
-the status and the category with an actual vendor failure — B11
-retired the log line that once named which field broke, on the theory
-that nothing was left that could name it. That conflated two different
-problems: a `5xx` means the vendor failed; a `200` that fails our shape
-check means the vendor answered but the shape is wrong, which is at
-least as much a contract question as a vendor-availability one. It now
-answers `500`/`INVALID_RESPONSE` — sharing a status with B12's
-catch-all but never its code — and `quote-service.ts` logs which
-fields failed — B15 — the same way B14 logs a `VendorStatusError`'s
-body: computed already, discarded before, now actually used. The
-`fieldNames` `validateQuote` already returned were dead data until this
-change; they are what B15 logs.
+**A `200` body breaking the outbound contract is `invalid response`,
+not `vendor error`.** A `5xx` means the vendor failed; a `200` that
+fails our shape check means the vendor answered but the shape is
+wrong — a contract question, not a vendor-availability one. It answers
+`500`/`INVALID_RESPONSE`, sharing a status with B12's catch-all but
+never its code, and `quote-service.ts` logs which fields failed — B15.
+(Revisited once — this used to share `502`/`VENDOR_UNAVAILABLE` with an
+actual vendor failure.)
 
 **`503`, not `504`, for our own timeout.** A gateway in front of us can
 also answer `504` when it gives up on us. Reusing that status here would

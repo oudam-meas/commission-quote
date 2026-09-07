@@ -65,6 +65,16 @@ describe('what the browser gets when the vendor fails', () => {
     expect(body.error.message).toBe(vendorUnavailable);
   });
 
+  // SPEC-008/B2
+  it('answers a vendor 500 and a vendor 401 with byte-identical bodies', async () => {
+    const serverErrorResponse = await postQuote(vendorRaising(500));
+    const authErrorResponse = await postQuote(vendorRaising(401));
+
+    expect(serverErrorResponse.status).toBe(502);
+    expect(authErrorResponse.status).toBe(502);
+    expect(await serverErrorResponse.text()).toBe(await authErrorResponse.text());
+  });
+
   // SPEC-008/B12
   // SPEC-008/B13
   // Exercises app.onError, the app's error boundary: the only place that

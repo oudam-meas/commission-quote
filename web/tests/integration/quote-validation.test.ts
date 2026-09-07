@@ -73,7 +73,7 @@ describe('rejecting a request the vendor could not answer', () => {
 
     expect(response.status).toBe(400);
     expect(body.error.code).toBe('INVALID_REQUEST');
-    expect(body.error.message).toBe('Too small: expected number to be >=100000');
+    expect(body.error.message).toBe('Loan amount must be at least $1,000');
     expect(vendorClient.calls).toEqual([]);
   });
 
@@ -103,6 +103,6 @@ describe('rejecting a request the vendor could not answer', () => {
     });
     const body = (await response.json()) as ErrorEnvelope;
 
-    expect(body.error.message).toBe('Too small: expected number to be >=100000');
+    expect(body.error.message).toBe('Loan amount must be at least $1,000');
   });
 });

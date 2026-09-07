@@ -82,8 +82,9 @@ the code can start it and run its tests from a README.
 ## Testing here
 
 Integration means `web`'s endpoints with the vendor client swapped for a
-double — one per error category. Contract means a real HTTP call to
-`VENDOR_URL`.
+double — one per error category by default, unless a spec deliberately
+narrows it (SPEC-008 does, for two categories). Contract means a real
+HTTP call to `VENDOR_URL`.
 
 The behaviour ID goes in a comment above each test, e.g.
 `// SPEC-001/B3`.
