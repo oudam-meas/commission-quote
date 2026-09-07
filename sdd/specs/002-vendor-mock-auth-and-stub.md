@@ -1,7 +1,7 @@
 ---
 id: SPEC-002
 title: Vendor mock — auth rejection and stub quote response
-status: ready
+status: done
 primary_test_level: contract
 touches: [commission-quote-api-mock/]
 ---

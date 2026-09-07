@@ -1,7 +1,7 @@
 ---
 id: SPEC-009
 title: Client — loading, quote and message on screen
-status: ready
+status: done
 primary_test_level: unit
 touches: [web/src/client/, web/tests/]
 ---

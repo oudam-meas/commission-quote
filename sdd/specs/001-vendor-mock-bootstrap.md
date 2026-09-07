@@ -1,7 +1,7 @@
 ---
 id: SPEC-001
 title: Vendor mock — bootstrap and contract test harness
-status: ready
+status: done
 primary_test_level: contract
 touches: [commission-quote-api-mock/]
 ---

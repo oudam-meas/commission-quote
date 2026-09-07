@@ -1,7 +1,7 @@
 ---
 id: SPEC-003
 title: Vendor mock — risk band pricing
-status: ready
+status: done
 primary_test_level: unit
 touches: [commission-quote-api-mock/]
 ---

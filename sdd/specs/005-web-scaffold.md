@@ -1,7 +1,7 @@
 ---
 id: SPEC-005
 title: Web package — scaffold and boundary
-status: ready
+status: done
 primary_test_level: unit
 touches: [web/src/, web/tests/]
 ---

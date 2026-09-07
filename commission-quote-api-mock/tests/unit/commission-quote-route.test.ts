@@ -65,11 +65,39 @@ describe('the commission quote route', () => {
     expect(status).toBe(400);
   });
 
+  // SPEC-003/B4
+  it('rejects a request with no risk band', async () => {
+    const { status } = await postQuote({ loanAmount: 250000, loanTermInMonths: 240 });
+
+    expect(status).toBe(400);
+  });
+
   // A loan amount in cents cannot hold a fraction, and a rate applied to one
   // would return a part of a cent.
   // SPEC-003/B5
   it('rejects a loan amount that is not a whole number of cents', async () => {
     const { status } = await postQuote({ ...validRequest, loanAmount: 250000.5 });
+
+    expect(status).toBe(400);
+  });
+
+  // SPEC-003/B5
+  it('rejects a request with no loan amount', async () => {
+    const { status } = await postQuote({ loanTermInMonths: 240, riskBand: 'LOW' });
+
+    expect(status).toBe(400);
+  });
+
+  // SPEC-003/B5
+  it('rejects a loan amount of zero', async () => {
+    const { status } = await postQuote({ ...validRequest, loanAmount: 0 });
+
+    expect(status).toBe(400);
+  });
+
+  // SPEC-003/B5
+  it('rejects a negative loan amount', async () => {
+    const { status } = await postQuote({ ...validRequest, loanAmount: -250000 });
 
     expect(status).toBe(400);
   });
