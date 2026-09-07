@@ -1,7 +1,7 @@
 ---
 id: SPEC-004
 title: Vendor mock — random failure simulation
-status: ready
+status: done
 primary_test_level: unit
 touches: [commission-quote-api-mock/]
 ---
@@ -53,8 +53,8 @@ anything is wrong until that check runs.
   key gets `401` and never reaches it.
 - B6: `GET /health` answers `200` whatever the pick would have been.
 - B7: `FAILURE_RATE` sets the chance of an outcome other than `success`.
-  It defaults to `0`, so every quote succeeds immediately unless it is
-  set.
+  It defaults to `0.2`, so roughly one request in five fails unless it
+  is set. `0` turns the simulation off.
 - B8: A picked `malformed` returns `200` immediately, with a body that
   matches the priced quote's shape but carries a `commissionRate` outside
   the `(0, 1)` the outbound contract requires.
@@ -72,7 +72,7 @@ env var. The route calls `pickOutcome(Math.random())`. That is the one
 place randomness enters.
 
 **The rate is a dial.** `FAILURE_RATE` is the total chance of an
-outcome other than immediate success, default `0`, split evenly
+outcome other than immediate success, default `0.2`, split evenly
 across the five other kinds. `pickOutcome` takes it alongside the
 random number:
 
@@ -89,9 +89,9 @@ pickOutcome(randomNumber, failureRate)
 | fourth fifth | `slow` |
 | last fifth | `malformed` |
 
-At `0`, the default, every request succeeds immediately — a fresh
-`npm start` never fails on its own. At `0.2`, for example, that first
-row shrinks to `[0, 0.8)` and each of the other five gets `0.04`.
+At `0`, every request succeeds immediately. At `0.2`, the default,
+that first row shrinks to `[0, 0.8)` and each of the other five gets
+`0.04` — a fresh `npm start` fails about one request in five.
 
 The dial exists so the whole stack can be walked end to end once it is
 turned up. Stepping through a form while one request in five fails at
@@ -106,12 +106,10 @@ fifth of that band it lands in. See ADR-001.
 
 A value outside `0` to `1`, or one that is not a number, raises at
 startup the same way a bad `API_KEY` does. An empty string means absent,
-so it gives the default `0` too — the same value `Number('')` happens
-to produce, but by an explicit check, not that coincidence. Reading
-`FAILURE_RATE` as a number before checking whether it was set at all
-would still work today only because the default and the coincidence
-match; it would not have before this default changed, and it is not
-the reasoning to depend on either way.
+so it gives the default `0.2` — not the `0` that `Number('')` happens
+to produce. The explicit absent check is what keeps those two apart;
+reading `FAILURE_RATE` as a number before checking whether it was set
+at all would silently turn the simulation off.
 
 **The route reads the rate from the same config call it already makes.**
 It reads `apiKey` per request through `readConfig(process.env)`, so it
@@ -190,9 +188,7 @@ None of the failure paths run over real HTTP — see Rationale.
 
 ## Edge cases
 
-The random-number rows below assume `FAILURE_RATE=0.2`, the same
-example rate used above — at the default, `0`, every one of them
-would just be `success`.
+The random-number rows below assume `FAILURE_RATE=0.2`, the default.
 
 | Condition | Expected |
 |---|---|
@@ -223,9 +219,10 @@ would just be `success`.
 
 ## Rationale
 
-**The contract suite relies on the default staying `0`.** A contract
-test cannot force one outcome, and this stand-in fails on purpose when
-asked to — those two facts together mean the suite needs failure off
-entirely, not merely tolerated. If the default is ever raised, the
-contract suite would need `FAILURE_RATE=0` set explicitly instead of
-relying on the unset default.
+**The contract suite needs `FAILURE_RATE=0` set explicitly.** A
+contract test cannot force one outcome, and this stand-in fails on
+purpose when asked to — those two facts together mean the suite needs
+failure off entirely, not merely tolerated. The default was `0` for
+exactly that reason. It rose to `0.2` so a fresh start shows the
+brief's random failure, and the burden moved to the contract run: start
+the server it targets with `FAILURE_RATE=0`.

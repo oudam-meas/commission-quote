@@ -42,11 +42,13 @@ random.
 Failures are random, and there's no way to force one. An override to
 demand a specific outcome was built, then cut, because the brief never
 asks for one and it was leaking into specs and tests as though it were a
-requirement. `FAILURE_RATE` survived as a dial instead. It's off by
-default and only turns the whole rate up or down, never picks which
-outcome lands. Every error shares one body shape, and `api` reads the
-status code alone, so swapping in the real vendor stays a config change
-instead of a code change.
+requirement. `FAILURE_RATE` survived as a dial instead. It defaults to
+`0.2` and only turns the whole rate up or down, never picks which
+outcome lands. Every error shares one body shape, and `api` decides the
+category by status code alone — a non-`200` body is read and logged for
+debugging (ADR-004), but never parsed to make that decision — so
+swapping in the real vendor stays a config change instead of a code
+change.
 
 The contract test is the deliverable, what I'd hand a vendor team to show
 what we agreed. One row per endpoint: request, expected status, expected

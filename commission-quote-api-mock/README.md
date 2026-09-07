@@ -9,8 +9,9 @@ real responses. It is deleted the day the real vendor ships. See
 This package is standalone. It has its own `package.json` and its own
 `node_modules`, and it imports nothing from `web/`.
 
-It can simulate the vendor failing, on purpose. Off by default
-(`FAILURE_RATE=0`), so a plain `npm start` never fails on its own. See
+It can simulate the vendor failing, on purpose. On by default
+(`FAILURE_RATE=0.2`), so a plain `npm start` fails roughly one request
+in five. Set `FAILURE_RATE=0` to turn it off. See
 [It fails on purpose](#it-fails-on-purpose).
 
 ## Run it
@@ -114,12 +115,13 @@ npm run typecheck
 ```
 
 Contract tests need a running server, so they're a separate command.
-Start the server in one terminal with `FAILURE_RATE` unset (the
-suite can't force one outcome, so it relies on the random failure
-staying off), then in another:
+Start the server in one terminal with `FAILURE_RATE=0` (the suite
+can't force one outcome, so it needs the random failure off), then in
+another:
 
 ```shell
-npm run test:contract
+FAILURE_RATE=0 npm start   # one terminal
+npm run test:contract      # another
 ```
 
 They make a real HTTP call to `VENDOR_URL` (default
@@ -145,7 +147,7 @@ band, failing at random.
 | Var | Default | Used by |
 |---|---|---|
 | `API_KEY` | none — required | the server |
-| `FAILURE_RATE` | `0` | the server |
+| `FAILURE_RATE` | `0.2` | the server |
 | `PORT` | `4000` | the server |
 | `VENDOR_URL` | `http://localhost:4000` | the contract tests |
 | `VENDOR_API_KEY` | `local-dev-key` | the contract tests |

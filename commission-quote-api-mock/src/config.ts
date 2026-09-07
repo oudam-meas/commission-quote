@@ -3,7 +3,7 @@ export type Config = {
   failureRate: number;
 };
 
-const defaultFailureRate = 0;
+const defaultFailureRate = 0.2;
 
 export function readConfig(env: Record<string, string | undefined>): Config {
   const apiKey = env.API_KEY;

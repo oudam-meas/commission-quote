@@ -15,21 +15,25 @@ describe('reading the server config', () => {
 // SPEC-004/B7
 describe('reading the failure rate from the config', () => {
   it('falls back to the default rate when the variable is absent', () => {
-    expect(readConfig({ API_KEY: 'local-dev-key' }).failureRate).toBe(0);
+    expect(readConfig({ API_KEY: 'local-dev-key' }).failureRate).toBe(0.2);
   });
 
-  // Number('') is also 0, so this and the absent case would pass even if the
-  // empty check were missing entirely. It stays as its own case because the
-  // reasoning — an explicit absent check, not a numeric coincidence — is what
-  // this test is proving, not just the resulting number.
+  // Number('') is 0, not the default — only the explicit absent check keeps
+  // an empty variable from silently turning the simulation off.
   it('falls back to the default rate when the variable is empty', () => {
-    expect(readConfig({ API_KEY: 'local-dev-key', FAILURE_RATE: '' }).failureRate).toBe(0);
+    expect(readConfig({ API_KEY: 'local-dev-key', FAILURE_RATE: '' }).failureRate).toBe(0.2);
   });
 
   // Not a number rather than out of range: Number('often') is NaN, and every
   // comparison against NaN is false, so a range check alone would let it pass.
   it('raises and names the variable when the rate is not a number', () => {
     expect(() => readConfig({ API_KEY: 'local-dev-key', FAILURE_RATE: 'often' })).toThrow(
+      /FAILURE_RATE/,
+    );
+  });
+
+  it('raises and names the variable when the rate is a number outside 0 to 1', () => {
+    expect(() => readConfig({ API_KEY: 'local-dev-key', FAILURE_RATE: '1.5' })).toThrow(
       /FAILURE_RATE/,
     );
   });
