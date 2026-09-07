@@ -1,0 +1,18 @@
+{
+  "name": "commission-quote-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Root scripts only. Starts the processes and fans tests out. The code lives in commission-quote-api-mock/ and web/.",
+  "scripts": {
+    "start": "concurrently -n mock,web,ui -c yellow,blue,magenta \"npm start --prefix commission-quote-api-mock\" \"npm run start:server --prefix web\" \"npm run start:client --prefix web\"",
+    "test": "npm test --prefix commission-quote-api-mock && npm test --prefix web",
+    "test:unit": "npm test --prefix commission-quote-api-mock && npm run test:unit --prefix web",
+    "test:int": "npm run test:int --prefix web",
+    "test:contract": "npm run test:contract --prefix commission-quote-api-mock",
+    "typecheck": "npm run typecheck --prefix commission-quote-api-mock && npm run typecheck --prefix web",
+    "install:all": "npm install --prefix commission-quote-api-mock && npm install --prefix web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

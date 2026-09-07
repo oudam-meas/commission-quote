@@ -7,8 +7,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    // The client keeps one relative URL and never learns a port, so the same
-    // build works in both run modes. ADR-003.
+    // The client keeps one relative URL and never learns a port. ADR-003.
     proxy: {
       '/api': 'http://localhost:4001',
     },

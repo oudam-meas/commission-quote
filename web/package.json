@@ -6,7 +6,6 @@
   "description": "The UI and the API layer in one deployable. src/client is React, src/server holds the vendor api-key.",
   "scripts": {
     "start:server": "tsx --env-file-if-exists=.env src/server/index.ts",
-    "dev:server": "tsx dev/main.ts",
     "start:client": "vite",
     "test": "vitest run tests/unit tests/integration",
     "test:unit": "vitest run tests/unit",
