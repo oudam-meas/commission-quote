@@ -11,7 +11,6 @@ file holds what is specific to this repo.
 ```
 npm install && npm run install:all
 npm start              # mock, web server and Vite together
-npm run dev            # web alone, against the dev double
 npm test               # unit and integration, both packages
 ```
 
@@ -46,7 +45,7 @@ own repo later.
 
 | Agent | Writes to | Never writes to |
 |---|---|---|
-| Main session | `specs/`, `ADRs/`, project-level files | — |
+| Main session | `sdd/specs/`, `sdd/ADRs/`, project-level files | — |
 | `test-writer` | `tests/` | `src/` |
 | `implementer` | `src/` | `tests/` |
 | `requirement-gaps` | — read-only | — |

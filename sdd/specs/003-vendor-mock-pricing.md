@@ -38,8 +38,8 @@ is enough to show a mapping, and any real scheme would be the vendor's
 to define.
 
 **Money is integer cents, in and out.** `loanAmount` arrives in cents
-and `totalCommission` is returned in cents. Never a float, per the
-decision recorded in the ADR index. The caller converts for display.
+and `totalCommission` is returned in cents. Never a float, per
+`CLAUDE.md`'s invariant. The caller converts for display.
 
 **The calculation.**
 
@@ -77,21 +77,24 @@ validation on `api`, before the vendor is called. The mock rejects a
 because otherwise it would return `NaN`. It checks nothing else —
 `loanTermInMonths` is accepted and ignored, since no rate depends on it.
 
-### Where each behaviour is proven
+**Dependencies** — `zod`, for the request schema shared by
+`src/app.ts` and `contract/schemas.ts`. One schema, read in both
+places, so the contract suite validates against the same rules the
+route enforces.
 
-| Behaviour | Level |
-|---|---|
-| B1, B2 | unit — call the pricing module directly with each band and known amounts |
-| B3 | unit — two calls to the route return different `quoteId` values |
-| B4, B5 | unit — the route, with an invalid body |
-| The happy path over real HTTP | contract — the existing SPEC-002 test, updated to expect a priced body |
+## Verification
 
-The contract suite still asserts only that the three fields are present.
-Never their values — ADR-001 forbids putting our invented rates into
-the file we would hand the vendor team.
+| Behaviour | Level | How |
+|---|---|---|
+| B1, B2 | unit | call the pricing module directly with each band and known amounts |
+| B3 | unit | two calls to the route return different `quoteId` values |
+| B4, B5 | unit | the route, with an invalid body |
+| The happy path over real HTTP | contract | the existing SPEC-002 test, updated to expect a priced body — asserts only that the three fields are present, never their values (ADR-001 forbids putting our invented rates in the file we'd hand the vendor team) |
 
-**Run instructions.** `commission-quote-api-mock/README.md` gains the
-band table and a worked example, replacing the stub body it shows now.
+## Main session owns
+
+- `commission-quote-api-mock/README.md` — the band table and a worked
+  example, replacing the stub body it shows now
 
 ## Edge cases
 

@@ -84,34 +84,32 @@ beyond that list needs its own line here.
 
 Added later: `@picocss/pico`, imported once in `main.tsx` as its
 classless build. It styles the semantic tags the components already
-render, so the UI gets a readable look with no class names and no CSS
-of our own to maintain.
+render, so the UI gets a readable look with no class names and almost
+no CSS of our own to maintain — `index.html` still carries a dozen
+lines of layout CSS (centering the column, capping its width), because
+Pico styles elements, not page layout.
 
-### Where each behaviour is proven
+## Verification
 
-| Behaviour | Level |
-|---|---|
-| B1 | hand-checked — start it, read the port it prints |
-| B2 | unit — `app.request('/health')`, in process |
-| B3 component | unit — render the component to a string and assert the heading. No DOM environment, no testing library. It shows markup and can never show a click; ADR-003's form needs real events and records what it adds. |
-| B3 in a browser | hand-checked — open `http://localhost:5173` |
-| B4 | hand-checked — the typecheck script exits zero |
-| B5 | hand-checked — grep, and typecheck still passes with the mock folder moved aside |
+| Behaviour | Level | How |
+|---|---|---|
+| B1 | human | start it, read the port it prints |
+| B2 | unit | `app.request('/health')`, in process |
+| B3 component | unit | render the component to a string and assert the heading. No DOM environment, no testing library — it shows markup and can never show a click; ADR-003's form needs real events and records what it adds |
+| B3 in a browser | human | open `http://localhost:5173` |
+| B4 | human | the typecheck script exits zero |
+| B5 | human | grep, and typecheck still passes with the mock folder moved aside |
 
-Four are hand-checked. That is the honest cost of a scaffold: starting a
-process, exiting a compiler and deleting a folder all sit outside the
-three test levels. They are one-line commands, and `web/README.md` lists
-them.
+Four rows are human: starting a process, exiting a compiler and
+deleting a folder all sit outside the three test levels. They are
+one-line commands, listed in `web/README.md`.
 
-**Who writes what.** `touches` names `web/src/` and `web/tests/`, the only
-paths an agent writes. Everything else — `package.json`, the tsconfigs,
-`vite.config.ts`, `index.html`, `.env.example`, `README.md` — is
-project-level and belongs to the main session.
+## Main session owns
 
-**Run instructions.** `web/README.md` states how to install, start both
-halves and run the tests. Per `CLAUDE.md`'s loop, this spec is done when
-someone who has not seen the code can run it from that file. The root
-`README.md` line saying `web/` is unbuilt is replaced.
+- `web/package.json`, the tsconfigs, `vite.config.ts`, `index.html`,
+  `.env.example`
+- `web/README.md` — install, start both halves, run the tests
+- root `README.md` — the line saying `web/` is unbuilt is replaced
 
 ## Edge cases
 

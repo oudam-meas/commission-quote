@@ -36,7 +36,7 @@ here and nowhere else.
 
 **Auth runs on this route alone.** `GET /health` is a liveness check
 and takes no key. Mounting the check globally would break the passing
-contract row at `commission-quote-api-mock/tests/contract/contract.test.ts`.
+contract row at `commission-quote-api-mock/contract/contract.test.ts`.
 
 **`API_KEY` has no default.** A stand-in that accepts any key when
 misconfigured is worse than one that refuses to boot.
@@ -78,29 +78,25 @@ message instead of a Node crash.
 `commission-quote-api-mock/.env.example` is committed and carries
 `API_KEY=local-dev-key`.
 
-### Where each behaviour is proven
+**Config module.** Config reading moves to its own module that returns
+the values or raises. `src/server.ts` calls it, catches, and exits
+non-zero — it currently calls `serve()` as an import side effect, which
+nothing in it can be reached from a unit test.
 
-**A config module.** `src/server.ts` currently calls `serve()` as an
-import side effect, so nothing in it can be reached from a unit test.
-Config reading moves to its own module that returns the values or
-raises. `src/server.ts` calls it, catches, and exits non-zero. That is
-what makes B5 testable.
+## Verification
 
-| Behaviour | Level |
-|---|---|
-| B1, B2, B3, B4 | contract — rows in `tests/contract/contract.test.ts`, run by the existing `test:contract` script |
-| B3's literal values (`0`, `0`, the id string) | unit — the mock's own promise, and ADR-001 forbids the contract suite from checking values |
-| B5, the raise | unit — call the config module with the variable unset |
-| B5, the non-zero exit | hand-checked. `API_KEY= npx tsx src/server.ts` prints the message and exits `1`. Reaching it from a test needs a spawned process, and no test level covers that. |
+| Behaviour | Level | How |
+|---|---|---|
+| B1, B2, B3, B4 | contract | rows in `contract/contract.test.ts`, run by the existing `test:contract` script — status codes and field presence only |
+| B3's literal values (`0`, `0`, the id string) | unit | the mock's own promise; ADR-001 forbids the contract suite from checking values |
+| B5, the raise | unit | call the config module with the variable unset |
+| B5, the non-zero exit | human | `API_KEY= npx tsx src/server.ts` prints the message and exits `1`. Reaching it needs a spawned process, and no test level covers that |
 
-The contract test reads `VENDOR_URL` the way the health suite does, and
-asserts status codes plus the presence of the three response fields.
-Never their values.
+## Main session owns
 
-**Run instructions.** `commission-quote-api-mock/README.md` gains the
-`.env` copy step and the quote endpoint. Per the loop in `CLAUDE.md`,
-this spec is not done until someone who has not seen the code can run
-it from that file.
+- `commission-quote-api-mock/.env.example` — `API_KEY=local-dev-key`
+- `commission-quote-api-mock/README.md` — the `.env` copy step and the
+  quote endpoint
 
 ## Edge cases
 

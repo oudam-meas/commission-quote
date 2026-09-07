@@ -67,17 +67,26 @@ go through Hono's `logger()` middleware. A start script that prints
 nothing cannot be told apart from one that hung, and the request log is
 what makes an injected failure visible when demonstrating one later.
 
-**Run instructions** — `commission-quote-api-mock/README.md` states how
-to install, start, and test the package. Per `CLAUDE.md`'s loop, the
-spec is not done until someone who has not seen the code can run it
-from that file.
+## Verification
+
+| Behaviour | Level | How |
+|---|---|---|
+| B1 | contract | `contract.test.ts`'s health row proves the server is listening on a real port |
+| B2 | unit | `health-route.test.ts`, `app.request('/health')` in process |
+| B2 | contract | `contract.test.ts`'s health row, over real HTTP |
+| B3 | human | read `contract.test.ts`: it calls `fetch`, never `app.request()` |
+
+## Main session owns
+
+- `commission-quote-api-mock/package.json`
+- `commission-quote-api-mock/README.md`
 
 ## Edge cases
 
-| Condition | Expected behaviour |
+| Condition | Expected |
 |---|---|
-| `PORT` env var not set | Server listens on `4000`. |
-| `VENDOR_URL` env var not set (contract test) | Test targets `http://localhost:4000`. |
+| `PORT` env var not set | Server listens on `4000` |
+| `VENDOR_URL` env var not set (contract test) | Test targets `http://localhost:4000` |
 
 ### Not handled
 

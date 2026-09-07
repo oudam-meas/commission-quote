@@ -27,6 +27,8 @@ tested with no network.
   request starts.
 - B5: The `x-request-id` header that came back with a failure is logged
   with `console.warn`. The screen shows the message alone.
+- B6: A request that never reaches `api` shows a fallback message, with
+  no request id, and leaves the form submittable again.
 - B7: On a successful quote the header still arrives, unshown and
   unlogged. A user holding a quote has nothing to report.
 - B8: While either text field is empty, the submit control is disabled.
@@ -69,11 +71,9 @@ arrives. A second copy of the mapping would drift from the server's.
 
 **One string is the exception.** When `fetch` rejects there is no
 response and no body, so there is nothing to display. The client holds a
-single fallback for that case and no other. It is the only message text
-in `src/client/`, and it is unreachable whenever `api` answers at all.
-
-- B6: A request that never reaches `api` shows that fallback, with no
-  request id, and leaves the form submittable again.
+single fallback for that case and no other (B6). It is the only message
+text in `src/client/`, and it is unreachable whenever `api` answers at
+all.
 
 **The request id goes to the console**, one `console.warn` per
 failure. Someone debugging reads it there and traces the failure
@@ -85,17 +85,19 @@ which needs a real DOM. SPEC-006 already landed `jsdom` and
 `@testing-library/react` for its form test, and says this spec reuses
 them.
 
-### Where each behaviour is proven
+## Verification
 
-| Behaviour | Level |
-|---|---|
-| B1 | unit — submit against a hand-written fetch double that has not resolved, assert the control is disabled |
-| B2 | unit — the display component with a quote, then with a message |
-| B3 | unit — two unrelated message strings, both rendered |
-| B4 | unit — fail once, submit again, assert the message is gone while loading |
-| B5 | unit — a doubled response with an `x-request-id` header, a hand-written `console.warn` double records the id, and the id is off screen |
-| B8 | unit — render the form empty and assert the control is disabled, fill both text fields and assert it enables |
-| All of them in a browser | hand-checked — `npm start` and submit until a random failure appears. ADR-001 already records refreshing until one shows |
+| Behaviour | Level | How |
+|---|---|---|
+| B1 | unit | submit against a hand-written fetch double that has not resolved, assert the control is disabled |
+| B2 | unit | the display component with a quote, then with a message |
+| B3 | unit | two unrelated message strings, both rendered |
+| B4 | unit | fail once, submit again, assert the message is gone while loading |
+| B5 | unit | a doubled response with an `x-request-id` header, a hand-written `console.warn` double records the id, and the id is off screen |
+| B6 | unit | the fetch double rejects; assert a message with no request id, and the control re-enabled |
+| B7 | unit | a doubled success response with an `x-request-id` header; assert it is off screen and never reaches `console.warn` |
+| B8 | unit | render the form empty and assert the control is disabled, fill both text fields and assert it enables |
+| All of them in a browser | human | `npm start` and submit until a random failure appears. ADR-001 already records refreshing until one shows |
 
 Every doubled thing is hand-written, per `CLAUDE.md`.
 
